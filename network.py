@@ -32,6 +32,11 @@ class Network(object):
         layer is assumed to be an input layer, and by convention we
         won't set any biases for those neurons, since biases are only
         ever used in computing the outputs from later layers."""
+        # size 是一个list结构, 定义各层的神经元数量
+        # biases 的个数和输出层的神经元的个数有关, 比如一开始输入是2, 输出是3, 个数就是三个
+        # weights 的位置和输出层输入层有关, 而且是输出层在前, 输入层在后
+        # 比如 [00] 表示输入层的第一个和输出层的第一个相连
+        # [01] 表示输入层的第二个和输出层的第一个相连
         self.num_layers = len(sizes)
         self.sizes = sizes
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
@@ -40,9 +45,10 @@ class Network(object):
 
     def feedforward(self, a):
         """Return the output of the network if ``a`` is input."""
-        for b, w in zip(self.biases, self.weights):
-            a = sigmoid(np.dot(w, a)+b)
-        return a
+        # 前反馈网络, 对于给定的a, 返回当前的输出
+        for b, w in zip(self.biases, self.weights):  # 对于输入层, 迭代得到输出
+            a = sigmoid(np.dot(w, a)+b)  # 为什么用a, 因为下一层的输入就是这一层的输出
+        return a  # 最后输出 a 的形状和最后一层神经元有关, 应该是 (最后一层的个数, 1) 的数组
 
     def SGD(self, training_data, epochs, mini_batch_size, eta,
             test_data=None):
@@ -54,7 +60,12 @@ class Network(object):
         network will be evaluated against the test data after each
         epoch, and partial progress printed out.  This is useful for
         tracking progress, but slows things down substantially."""
-
+        # 随机梯度下降方法
+        # training_data 是类似于(x, y)的训练数据, x 是输入, y是期望输出
+        # epochs 是时代, 纪元的意思, 训练的次数
+        # mini_batch_size 是最小批次
+        # eta 是学习速率
+        # test_data 格式和 train_data 一样
         training_data = list(training_data)
         n = len(training_data)
 
@@ -63,29 +74,30 @@ class Network(object):
             n_test = len(test_data)
 
         for j in range(epochs):
-            random.shuffle(training_data)
+            random.shuffle(training_data)  # 随机打乱数组
             mini_batches = [
-                training_data[k:k+mini_batch_size]
-                for k in range(0, n, mini_batch_size)]
-            for mini_batch in mini_batches:
-                self.update_mini_batch(mini_batch, eta)
-            if test_data:
-                print("Epoch {} : {} / {}".format(j,self.evaluate(test_data),n_test));
-            else:
-                print("Epoch {} complete".format(j))
+                training_data[k:k+mini_batch_size]  # 将整个 train_data 划分成 mini_batch_size 大小
+                for k in range(0, n, mini_batch_size)]  # 列表推导式写成三行了
+            for mini_batch in mini_batches: # 从上面可以看出, 所有的数据都会被用在一个 epoch 中
+                self.update_mini_batch(mini_batch, eta)  # 见下面的函数定义, 核心
+            if test_data and n_test:
+                print("Epoch {} : {} / {}".format(j,self.evaluate(test_data),n_test))  # 验证
+            # else:  # 为什么放else, 去掉就能在每次都显示了
+            print("Epoch {} complete".format(j))
 
     def update_mini_batch(self, mini_batch, eta):
         """Update the network's weights and biases by applying
         gradient descent using backpropagation to a single mini batch.
         The ``mini_batch`` is a list of tuples ``(x, y)``, and ``eta``
         is the learning rate."""
-        nabla_b = [np.zeros(b.shape) for b in self.biases]
-        nabla_w = [np.zeros(w.shape) for w in self.weights]
+        # 更新 weights 和 biases
+        nabla_b = [np.zeros(b.shape) for b in self.biases]  # 复制形状, 用零填充
+        nabla_w = [np.zeros(w.shape) for w in self.weights]  # nabla 是微分符号的意思, 倒三角形
         for x, y in mini_batch:
-            delta_nabla_b, delta_nabla_w = self.backprop(x, y)
+            delta_nabla_b, delta_nabla_w = self.backprop(x, y)  # 又见新函数, 核心中的核心
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
-        self.weights = [w-(eta/len(mini_batch))*nw
+        self.weights = [w-(eta/len(mini_batch))*nw  # 通过 nabla_w 重新计算 weights
                         for w, nw in zip(self.weights, nabla_w)]
         self.biases = [b-(eta/len(mini_batch))*nb
                        for b, nb in zip(self.biases, nabla_b)]
@@ -130,9 +142,9 @@ class Network(object):
         network outputs the correct result. Note that the neural
         network's output is assumed to be the index of whichever
         neuron in the final layer has the highest activation."""
-        test_results = [(np.argmax(self.feedforward(x)), y)
-                        for (x, y) in test_data]
-        return sum(int(x == y) for (x, y) in test_results)
+        test_results = [(np.argmax(self.feedforward(x)), y)  # np.argmax 返回最大值的索引
+                        for (x, y) in test_data]  # 为什么用索引, 因为数字识别时输出是一个(10, 1)的十维数组
+        return sum(int(x == y) for (x, y) in test_results) # y 是正确值, 也是索引
 
     def cost_derivative(self, output_activations, y):
         """Return the vector of partial derivatives \partial C_x /
@@ -147,3 +159,16 @@ def sigmoid(z):
 def sigmoid_prime(z):
     """Derivative of the sigmoid function."""
     return sigmoid(z)*(1-sigmoid(z))
+
+
+if __name__ == '__main__':
+    net = Network([2,3,10])
+    print(net.biases)
+    print(net.weights)
+    # for x in net.biases:
+    #    print(x)
+    random_a = np.random.randn(2,1)
+    print(random_a)
+    result = net.feedforward(random_a)
+    print(result)
+    print(np.argmax(result))
