@@ -97,6 +97,7 @@ class Network(object):
             delta_nabla_b, delta_nabla_w = self.backprop(x, y)  # 又见新函数, 核心中的核心
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
+        # 这里是 步骤3, 更新梯度
         self.weights = [w-(eta/len(mini_batch))*nw  # 通过 nabla_w 重新计算 weights
                         for w, nw in zip(self.weights, nabla_w)]
         self.biases = [b-(eta/len(mini_batch))*nb
@@ -107,6 +108,7 @@ class Network(object):
         gradient for the cost function C_x.  ``nabla_b`` and
         ``nabla_w`` are layer-by-layer lists of numpy arrays, similar
         to ``self.biases`` and ``self.weights``."""
+        # 反向传播
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         # feedforward
@@ -114,24 +116,30 @@ class Network(object):
         activations = [x] # list to store all the activations, layer by layer
         zs = [] # list to store all the z vectors, layer by layer
         for b, w in zip(self.biases, self.weights):
+            # 步骤2.1
             z = np.dot(w, activation)+b
             zs.append(z)
             activation = sigmoid(z)
             activations.append(activation)
         # backward pass
+        # 步骤2.2, 计算最后一个输出误差, delta
         delta = self.cost_derivative(activations[-1], y) * \
             sigmoid_prime(zs[-1])
+        # 这里是 BP3
         nabla_b[-1] = delta
-        nabla_w[-1] = np.dot(delta, activations[-2].transpose())
+        # 这里是 BP4
+        nabla_w[-1] = np.dot(delta, activations[-2].transpose())  # transpose() 是矩阵转置
         # Note that the variable l in the loop below is used a little
         # differently to the notation in Chapter 2 of the book.  Here,
         # l = 1 means the last layer of neurons, l = 2 is the
         # second-last layer, and so on.  It's a renumbering of the
         # scheme in the book, used here to take advantage of the fact
         # that Python can use negative indices in lists.
+        # 步骤2.3, 误差反向传播, 依次计算 第L-1层到第2层
         for l in range(2, self.num_layers):
             z = zs[-l]
             sp = sigmoid_prime(z)
+            # 右边的 delta 是 l+1 层的 delta
             delta = np.dot(self.weights[-l+1].transpose(), delta) * sp
             nabla_b[-l] = delta
             nabla_w[-l] = np.dot(delta, activations[-l-1].transpose())
@@ -149,6 +157,7 @@ class Network(object):
     def cost_derivative(self, output_activations, y):
         """Return the vector of partial derivatives \partial C_x /
         \partial a for the output activations."""
+        # 代价函数的导数, 当前的代价函数是平方代价函数
         return (output_activations-y)
 
 #### Miscellaneous functions
@@ -162,7 +171,7 @@ def sigmoid_prime(z):
 
 
 if __name__ == '__main__':
-    net = Network([2,3,10])
+    net = Network([2,3,1])
     print(net.biases)
     print(net.weights)
     # for x in net.biases:
