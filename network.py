@@ -39,7 +39,7 @@ class Network(object):
         # [01] 表示输入层的第二个和输出层的第一个相连
         self.num_layers = len(sizes)
         self.sizes = sizes
-        self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
+        self.biases = [np.random.randn(y, 1) for y in sizes[1:]]  # np.random.randn 返回标准正态分布
         self.weights = [np.random.randn(y, x)
                         for x, y in zip(sizes[:-1], sizes[1:])]
 
@@ -176,8 +176,8 @@ if __name__ == '__main__':
     print(net.weights)
     # for x in net.biases:
     #    print(x)
-    random_a = np.random.randn(2,1)
+    random_a = np.random.randn(4, 1)
     print(random_a)
-    result = net.feedforward(random_a)
-    print(result)
-    print(np.argmax(result))
+    # result = net.feedforward(random_a)
+    # print(result)
+    # print(np.argmax(result))

@@ -24,13 +24,14 @@ import numpy as np
 #### Define the quadratic and cross-entropy cost functions
 
 class QuadraticCost(object):
-
+    # 二次代价函数
     @staticmethod
     def fn(a, y):
         """Return the cost associated with an output ``a`` and desired output
         ``y``.
 
         """
+        # np.linalg.norm 返回范数
         return 0.5*np.linalg.norm(a-y)**2
 
     @staticmethod
@@ -40,7 +41,7 @@ class QuadraticCost(object):
 
 
 class CrossEntropyCost(object):
-
+    # 交叉熵代价函数
     @staticmethod
     def fn(a, y):
         """Return the cost associated with an output ``a`` and desired output
@@ -51,6 +52,7 @@ class CrossEntropyCost(object):
         to the correct value (0.0).
 
         """
+        # 计算代价, 输出激活值a和目标输出y之间的差距
         return np.sum(np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a)))
 
     @staticmethod
@@ -61,6 +63,7 @@ class CrossEntropyCost(object):
         consistent with the delta method for other cost classes.
 
         """
+        # 计算输出误差
         return (a-y)
 
 
@@ -96,6 +99,8 @@ class Network(object):
         layers.
 
         """
+        # 初始化权重和偏置, 注意权重的标准差变成了 1/sqrt(n), n为对应的输入连接个数
+        # np.random.randn 返回标准正态分布
         self.biases = [np.random.randn(y, 1) for y in self.sizes[1:]]
         self.weights = [np.random.randn(y, x)/np.sqrt(x)
                         for x, y in zip(self.sizes[:-1], self.sizes[1:])]
@@ -153,7 +158,7 @@ class Network(object):
         are empty if the corresponding flag is not set.
 
         """
-
+        # lmbda 是正则化参数
         # early stopping functionality:
         best_accuracy=1
 
@@ -228,6 +233,7 @@ class Network(object):
             delta_nabla_b, delta_nabla_w = self.backprop(x, y)
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
+        # 使用L2正则化更新权重
         self.weights = [(1-eta*(lmbda/n))*w-(eta/len(mini_batch))*nw
                         for w, nw in zip(self.weights, nabla_w)]
         self.biases = [b-(eta/len(mini_batch))*nb
@@ -245,12 +251,12 @@ class Network(object):
         activations = [x] # list to store all the activations, layer by layer
         zs = [] # list to store all the z vectors, layer by layer
         for b, w in zip(self.biases, self.weights):
-            z = np.dot(w, activation)+b
+            z = np.dot(w, activation)+b  # 计算加权输入
             zs.append(z)
             activation = sigmoid(z)
             activations.append(activation)
         # backward pass
-        delta = (self.cost).delta(zs[-1], activations[-1], y)
+        delta = (self.cost).delta(zs[-1], activations[-1], y)  # 计算输出误差, 注意 self.cost 是外部定义的代价函数
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta, activations[-2].transpose())
         # Note that the variable l in the loop below is used a little
@@ -259,6 +265,7 @@ class Network(object):
         # second-last layer, and so on.  It's a renumbering of the
         # scheme in the book, used here to take advantage of the fact
         # that Python can use negative indices in lists.
+        # 步骤2.3, 误差反向传播, 依次计算 第L-1层到第2层
         for l in range(2, self.num_layers):
             z = zs[-l]
             sp = sigmoid_prime(z)
@@ -290,6 +297,8 @@ class Network(object):
         mnist_loader.load_data_wrapper.
 
         """
+        # convert: 如果是训练集就要设置为True, 验证集或测试集就要设置为False
+        # 训练集的y是个(10, 1)的矩阵, 验证集或测试集的y是个值(标量)
         if convert:
             results = [(np.argmax(self.feedforward(x)), np.argmax(y))
                        for (x, y) in data]
@@ -307,6 +316,7 @@ class Network(object):
         the validation or test data.  See comments on the similar (but
         reversed) convention for the ``accuracy`` method, above.
         """
+        # convert: 如果是训练集就设置为 False, 验证集或测试集就设置为True, 和上面相反
         cost = 0.0
         for x, y in data:
             a = self.feedforward(x)
@@ -347,6 +357,7 @@ def vectorized_result(j):
     into a corresponding desired output from the neural network.
 
     """
+    # 将y转换为(10,1)的矩阵, 即十维向量
     e = np.zeros((10, 1))
     e[j] = 1.0
     return e
